@@ -58,8 +58,8 @@ public:
 
   typedef ft::vector_iterator<pointer>              iterator;
   typedef ft::vector_iterator<const_pointer>        const_iterator;
-  // typedef ft::reverse_iterator<iterator>           reverse_iterator;
-  // typedef ft::reverse_iterator<const_iterator>     const_reverse_iterator;
+  typedef ft::reverse_iterator<iterator>           reverse_iterator;
+  typedef ft::reverse_iterator<const_iterator>     const_reverse_iterator;
 
 protected:
   allocator_type c;
@@ -180,30 +180,30 @@ public:
   /**
    * @brief Returns a read/write reverse iterator pointing to the last element in the vector
    */
-  // reverse_iterator rbegin() {
-  //   return reverse_iterator(end());
-  // }
+  reverse_iterator rbegin() {
+    return reverse_iterator(end());
+  }
 
   /**
    * @brief a read-only reverse iterator pointing to the last element in the vector
    */
-  // const_reverse_iterator rbegin() const {
-  //   return const_reverse_iterator(end());
-  // }
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
+  }
 
   /**
    * @brief a read/write reverse iterator pointing to one before the first element in the vector
    */
-  // reverse_iterator rend() {
-  //   return reverse_iterator(begin());
-  // }
+  reverse_iterator rend() {
+    return reverse_iterator(begin());
+  }
 
   /**
    * @brief Returns a read-only reverse iterator pointing to one before the first element in the vector
    */
-  // const_reverse_iterator rend() const {
-  //   return const_reverse_iterator(begin());
-  // }
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
+  }
 
   //!@} Reverse Iterators
 
