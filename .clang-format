@@ -1,0 +1,10 @@
+IndentWidth: 2
+DerivePointerAlignment: false
+PointerAlignment: Left
+ColumnLimit: 80
+SpaceInEmptyBlock: true
+AlwaysBreakTemplateDeclarations: Yes
+AlignAfterOpenBracket: Align
+AlignConsecutiveDeclarations: AcrossComments
+AlignConsecutiveMacros: AcrossComments
+AlignEscapedNewlines: Left
