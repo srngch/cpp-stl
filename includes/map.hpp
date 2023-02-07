@@ -1,5 +1,5 @@
-#ifndef __VECTOR_HPP__
-#define __VECTOR_HPP__
+#ifndef __MAP_HPP__
+#define __MAP_HPP__
 
 #include <memory>
 #include "pair.hpp"
@@ -293,4 +293,4 @@ inline void swap(map<Key, Tp, Compare, Alloc>& x,
 
 } /* namespace ft */
 
-#endif /* __VECTOR_HPP__ */
+#endif /* __MAP_HPP__ */
