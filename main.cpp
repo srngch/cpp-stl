@@ -1,7 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <map>
+#include <set>
 #include "stack.hpp"
+#include "map.hpp"
+#include "set.hpp"
 #include "rb_tree.hpp"
 
 #include "pair.hpp"
@@ -47,9 +51,27 @@ void test_rb_tree() {
 	}
 }
 
+void test_map() {
+	ft::map<std::string, int> ft_map;
+	ft_map.insert(ft::make_pair("a", 11));
+	ft_map.insert(ft::make_pair("b", 22));
+}
+
+void test_set() {
+	ft::set<std::string> ft_set;
+	ft_set.insert("a");
+	ft_set.insert("b");
+
+	std::set<std::string> org_set;
+	org_set.insert("a");
+	org_set.insert("b");
+}
+
 int main ()
 {
-	test_stack();
-	test_rb_tree();
+	// test_stack();
+	// test_rb_tree();
+	// test_map();
+	test_set();
 	return 0;
 }
