@@ -685,7 +685,9 @@ public:
 
   size_type size() const { return _M_node_count; }
 
-  size_type max_size() const { return size_type(-1); }
+  size_type max_size() const {
+    return std::numeric_limits<difference_type>::max();
+  }
 
   void swap(_Rb_tree<_Key, _Val, _KeyOfValue, _Compare, _Alloc>& __t) {
     if (_M_root() == 0) {
