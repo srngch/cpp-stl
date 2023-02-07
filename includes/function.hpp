@@ -1,5 +1,6 @@
 #ifndef __FUNCTION_HPP__
 #define __FUNCTION_HPP__
+
 namespace ft
 {
 

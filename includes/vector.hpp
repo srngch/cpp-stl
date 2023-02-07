@@ -6,31 +6,29 @@
 #include "type_traits.hpp"
 #include "algobase.hpp"
 
-namespace ft
-{
+namespace ft {
 
-template<typename T, typename Alloc = std::allocator<T> >
-class vector_base
-{
+template <typename T, typename Alloc = std::allocator<T> >
+class vector_base {
 protected:
-  typedef Alloc                            allocator_type;
-  typedef typename Alloc::pointer          pointer;
-  typedef typename Alloc::const_pointer    const_pointer;
-  typedef typename Alloc::reference        reference;
-  typedef typename Alloc::const_reference  const_reference;
+  typedef Alloc                           allocator_type;
+  typedef typename Alloc::pointer         pointer;
+  typedef typename Alloc::const_pointer   const_pointer;
+  typedef typename Alloc::reference       reference;
+  typedef typename Alloc::const_reference const_reference;
 
-  allocator_type                           alloc;
+  allocator_type                          alloc;
   pointer                                 _start;
   pointer                                 _finish;
   pointer                                 _end_of_storage;
 
 public:
-
   vector_base(const allocator_type& a)
   : alloc(a), _start(NULL), _finish(NULL), _end_of_storage(NULL) { }
 
   vector_base(size_t n, const allocator_type& a)
-  : alloc(a), _start(alloc.allocate(n)), _finish(_start), _end_of_storage(_start + n) { }
+  : alloc(a), _start(alloc.allocate(n)), _finish(_start),
+    _end_of_storage(_start + n) { }
 
   ~vector_base() {
     if (_start)
@@ -38,26 +36,24 @@ public:
   }
 };
 
-
 template <typename T, typename Alloc = std::allocator<T> >
-class vector : protected vector_base<T, Alloc>
-{
-  typedef vector_base<T, Alloc>           base;
-  typedef vector<T, Alloc>                vector_type;
+class vector : protected vector_base<T, Alloc> {
+  typedef vector_base<T, Alloc> base;
+  typedef vector<T, Alloc>      vector_type;
 
 public:
-  typedef T                                         value_type;
-  typedef Alloc                                     allocator_type;
-  typedef size_t                                    size_type;
-  typedef ptrdiff_t                                 difference_type;
+  typedef T                                        value_type;
+  typedef Alloc                                    allocator_type;
+  typedef size_t                                   size_type;
+  typedef ptrdiff_t                                difference_type;
 
-  typedef typename allocator_type::reference        reference;
-  typedef typename allocator_type::const_reference  const_reference;
-  typedef typename allocator_type::pointer          pointer;
-  typedef typename allocator_type::const_pointer    const_pointer;
+  typedef typename allocator_type::reference       reference;
+  typedef typename allocator_type::const_reference const_reference;
+  typedef typename allocator_type::pointer         pointer;
+  typedef typename allocator_type::const_pointer   const_pointer;
 
-  typedef ft::vector_iterator<pointer>              iterator;
-  typedef ft::vector_iterator<const_pointer>        const_iterator;
+  typedef ft::vector_iterator<pointer>             iterator;
+  typedef ft::vector_iterator<const_pointer>       const_iterator;
   typedef ft::reverse_iterator<iterator>           reverse_iterator;
   typedef ft::reverse_iterator<const_iterator>     const_reverse_iterator;
 
@@ -65,6 +61,7 @@ protected:
   allocator_type c;
 
 public:
+  //!@{ construct/copy/destroy /////////////////////////////////////////////////
 
   /**
    * @brief constructor(default)
@@ -72,10 +69,7 @@ public:
    * @example empty vector of ints
    *     ft::vector<int> first;
    */
-  explicit
-  vector(const allocator_type& a = allocator_type()) : base(a) {
-    // std::cout << "constructor(default)" << std::endl;
-  }
+  explicit vector(const allocator_type& a = allocator_type()) : base(a) { }
 
   /**
    * @brief constructor(fill)
@@ -83,11 +77,9 @@ public:
    * @example four ints with value 100
    *     ft::vector<int> second(4, 100);
    */
-  explicit
-  vector(size_type n,
-         const value_type& v = value_type(),
-         const allocator_type& a = allocator_type()) : base(n, a) {
-    // std::cout << "constructor(fill)" << std::endl;
+  explicit vector(size_type n, const value_type& v = value_type(),
+                  const allocator_type& a = allocator_type())
+  : base(n, a) {
     while (n--)
       c.construct(this->_finish++, v);
   }
@@ -98,15 +90,13 @@ public:
    *     ft::vector<int> third(second.begin(), second.end());
    */
   template <class InputIterator>
-  vector(InputIterator first,
-         InputIterator last,
-         const allocator_type& a = allocator_type()) : base(a) {
-    // std::cout << "constructor(range)" << std::endl;
+  vector(InputIterator first, InputIterator last,
+         const allocator_type& a = allocator_type())
+  : base(a) {
     // check if it's an integer type
-    typedef typename ft::is_integral<InputIterator>::type  is_integer;
+    typedef typename ft::is_integral<InputIterator>::type is_integer;
     _initialize_dispatch(first, last, is_integer());
   }
-
 
   /**
    * @brief copy constructor
@@ -117,18 +107,16 @@ public:
     this->insert(this->begin(), other.begin(), other.end());
   }
 
-
   /**
    * @brief destructor
    * Destroy the vector object
    */
-  ~vector() {
-    this->clear();
-  }
+  ~vector() { this->clear(); }
 
   /**
    * @brief assignment operator
-   * Assigns new contents to the container, replacing its current contents, and modifying its size accordingly.
+   * Assigns new contents to the container, replacing its current contents, and
+   * modifying its size accordingly.
    *
    * @param x container to be copied.
    * @return vector&
@@ -142,94 +130,88 @@ public:
     return *this;
   }
 
+  //!@}
+
   //!@{ Iterators //////////////////////////////////////////////////////////////
 
   /**
-   * @brief Returns a read/write iterator pointing to the first element in the vector.
+   * @brief Returns a read/write iterator pointing to the first element in the
+   * vector.
    */
-  iterator begin() {
-    return iterator(this->_start);
-  }
+  iterator begin() { return iterator(this->_start); }
 
   /**
-   * @brief Returns a read-only iterator pointing to the first element in the vector.
+   * @brief Returns a read-only iterator pointing to the first element in the
+   * vector.
    */
-  const_iterator begin() const {
-    return const_iterator(this->_start);
-  }
+  const_iterator begin() const { return const_iterator(this->_start); }
 
   /**
-   * @brief Returns a read/write iterator pointing to one past the last element in the vector.
+   * @brief Returns a read/write iterator pointing to one past the last element
+   * in the vector.
    */
-  iterator end() {
-    return iterator(this->_finish);
-  }
+  iterator end() { return iterator(this->_finish); }
 
   /**
-   * @brief Returns a read-only iterator pointing to one past the last element in the vector.
+   * @brief Returns a read-only iterator pointing to one past the last element
+   * in the vector.
    */
-  const_iterator end() const {
-    return const_iterator(this->_finish);
-  }
+  const_iterator end() const { return const_iterator(this->_finish); }
 
-  //!@} Iterators
+  //!@}
 
   //!@{ Reverse Iterators //////////////////////////////////////////////////////
-  // TODO: reverse_iterator 구현 후 계속
 
   /**
-   * @brief Returns a read/write reverse iterator pointing to the last element in the vector
+   * @brief Returns a read/write reverse iterator pointing to the last element
+   * in the vector
    */
-  reverse_iterator rbegin() {
-    return reverse_iterator(end());
-  }
+  reverse_iterator rbegin() { return reverse_iterator(end()); }
 
   /**
-   * @brief a read-only reverse iterator pointing to the last element in the vector
+   * @brief a read-only reverse iterator pointing to the last element in the
+   * vector
    */
   const_reverse_iterator rbegin() const {
     return const_reverse_iterator(end());
   }
 
   /**
-   * @brief a read/write reverse iterator pointing to one before the first element in the vector
+   * @brief a read/write reverse iterator pointing to one before the first
+   * element in the vector
    */
-  reverse_iterator rend() {
-    return reverse_iterator(begin());
-  }
+  reverse_iterator rend() { return reverse_iterator(begin()); }
 
   /**
-   * @brief Returns a read-only reverse iterator pointing to one before the first element in the vector
+   * @brief Returns a read-only reverse iterator pointing to one before the
+   * first element in the vector
    */
   const_reverse_iterator rend() const {
     return const_reverse_iterator(begin());
   }
 
-  //!@} Reverse Iterators
+  //!@}
 
   //!@{ Capacity ///////////////////////////////////////////////////////////////
 
   /**
    * @brief Returns the number of elements in the vector.
-   * This is the number of actual objects held in the vector, which is not necessarily equal to its storage capacity.
+   * This is the number of actual objects held in the vector, which is not
+   * necessarily equal to its storage capacity.
    * @return size of the container
    */
-  size_type size() const {
-    return size_type(end() - begin());
-  }
+  size_type size() const { return size_type(end() - begin()); }
 
   /**
    * @brief Returns the maximum number of elements that the vector can hold.
    */
-  size_type max_size() const {
-    return size_type(-1) / sizeof(value_type);
-  }
+  size_type max_size() const { return size_type(-1) / sizeof(value_type); }
 
   /**
    * @brief Resizes the container so that it contains n elements.
    * @param n new size of the container
    * @param v value to initialize the new elements with
-  */
+   */
   void resize(size_type n, value_type v = value_type()) {
     // TODO: insert 구현 후 다시 체크
     if (n < size()) {
@@ -240,19 +222,21 @@ public:
   }
 
   /**
-   * @brief Returns the size of the storage space currently allocated for the vector, expressed in terms of elements.
+   * @brief Returns the size of the storage space currently allocated for the
+   * vector, expressed in terms of elements.
    */
   size_type capacity() const {
     return size_type(const_iterator(this->_end_of_storage) - begin());
   }
+
   /**
    * @brief Returns whether the vector is empty: i.e. whether its size is 0.
    */
-  bool empty() const {
-    return begin() == end();
-  }
+  bool empty() const { return begin() == end(); }
+
   /**
-   * @brief Requests that the vector capacity be at least enough to contain n elements.
+   * @brief Requests that the vector capacity be at least enough to contain n
+   * elements.
    * @param n: new capacity of the container
    */
   void reserve(size_type n) {
@@ -262,19 +246,16 @@ public:
     // https://cplusplus.com/reference/vector/vector/reserve/
   }
 
-  //!@} Capacity
+  //!@}
 
   //!@{ Element Access /////////////////////////////////////////////////////////
 
   /**
-   * @brief Returns a reference to the element at position n in the vector container.
+   * @brief Returns a reference to the element at position n in the vector
+   * container.
    */
-  reference operator[](size_type n) {
-    return *(begin() + n);
-  }
-  const_reference operator[](size_type n) const {
-    return *(begin() + n);
-  }
+  reference       operator[](size_type n) { return *(begin() + n); }
+  const_reference operator[](size_type n) const { return *(begin() + n); }
 
   /**
    * @brief Returns a reference to the element at position n in the vector.
@@ -294,59 +275,49 @@ public:
   /**
    * @brief Returns a reference to the first element in the vector.
    */
-  reference front() {
-    return *begin();
-  }
-  const_reference front() const {
-    return *begin();
-  }
+  reference       front() { return *begin(); }
+  const_reference front() const { return *begin(); }
 
   /**
    * @brief Returns a reference to the last element in the vector.
    */
-  reference back() {
-    return *(end() - 1);
-  }
-  const_reference back() const {
-    return *(end() - 1);
-  }
+  reference       back() { return *(end() - 1); }
+  const_reference back() const { return *(end() - 1); }
 
   /**
-   * @brief Returns a direct pointer to the memory array used internally by the vector to store its owned elements.
+   * @brief Returns a direct pointer to the memory array used internally by the
+   * vector to store its owned elements.
    */
-  pointer data() {
-    return this->_start;
-  }
-  const_pointer data() const {
-    return this->_start;
-  }
+  pointer       data() { return this->_start; }
+  const_pointer data() const { return this->_start; }
 
-  //!@} Element Access
+  //!@}
 
   //!@{ Modifier ///////////////////////////////////////////////////////////////
 
   /**
-   * @brief Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
+   * @brief Assigns new contents to the vector, replacing its current contents,
+   * and modifying its size accordingly.
    * @param n: new size of the container
    * @param val: value to initialize the new elements with
    */
-  void assign(size_type n, const value_type& val) {
-    _fill_assign(n, val);
-  }
+  void assign(size_type n, const value_type& val) { _fill_assign(n, val); }
 
   /**
-   * @brief Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
+   * @brief Assigns new contents to the vector, replacing its current contents,
+   * and modifying its size accordingly.
    * @param first: InputIterator to the initial position in a sequence
    * @param last: InputIterator to the final position in a sequence
    */
   template <typename InputIterator>
   void assign(InputIterator first, InputIterator last) {
-    typedef typename ft::is_integral<InputIterator>::type  is_integer;
+    typedef typename ft::is_integral<InputIterator>::type is_integer;
     _assign_dispatch(first, last, is_integer());
   }
 
   /**
-   * @brief Adds a new element at the end of the vector, after its current last element.
+   * @brief Adds a new element at the end of the vector, after its current last
+   * element.
    */
   void push_back(const value_type& val) {
     if (this->_finish != this->_end_of_storage) {
@@ -358,7 +329,8 @@ public:
   }
 
   /**
-   * @brief Removes the last element in the vector, effectively reducing the container size by one.
+   * @brief Removes the last element in the vector, effectively reducing the
+   * container size by one.
    */
   void pop_back() {
     --this->_finish;
@@ -367,7 +339,8 @@ public:
 
   /**
    * @brief Inserts elements at the specified location in the container.
-   * Effectively increases the container size by the number of elements inserted.
+   * Effectively increases the container size by the number of elements
+   * inserted.
    * @param position iterator before which the content will be inserted
    * @param val value to be copied (or moved) to the inserted elements
    */
@@ -386,8 +359,10 @@ public:
   void insert(iterator position, size_type n, const value_type& val) {
     _fill_insert(position, n, val);
   }
+
   /**
-   * @brief Inserts elements from range [first, last) at the specified location in the container.
+   * @brief Inserts elements from range [first, last) at the specified location
+   * in the container.
    * @param position iterator before which the content will be inserted
    * @param first beginning of the range(including the element pointed by first)
    * @param last end of the range(excluding the element pointed by last)
@@ -395,14 +370,16 @@ public:
   template <typename InputIterator>
   void insert(iterator position, InputIterator first, InputIterator last) {
     // check if it's an integer type
-    typedef typename ft::is_integral<InputIterator>::type  is_integer;
+    typedef typename ft::is_integral<InputIterator>::type is_integer;
     _insert_dispatch(position, first, last, is_integer());
   }
 
   /**
    * @brief Remove single element at position.
-   * @param position iterator pointing to a single element to be removed from the vector.
-   * @return An iterator pointing to the element that followed the last element removed by the function call.
+   * @param position iterator pointing to a single element to be removed from
+   * the vector.
+   * @return An iterator pointing to the element that followed the last element
+   * removed by the function call.
    */
   iterator erase(iterator position) {
     if (position != end() - 1)
@@ -415,9 +392,12 @@ public:
 
   /**
    * @brief Removes a range of elements.
-   * @param first iterator pointing to the first element to be removed from the vector.
-   * @param last iterator pointing to the element following the last element to be removed from the vector.
-   * @return An iterator pointing to the element that followed the last element removed by the function call.
+   * @param first iterator pointing to the first element to be removed from the
+   * vector.
+   * @param last iterator pointing to the element following the last element to
+   * be removed from the vector.
+   * @return An iterator pointing to the element that followed the last element
+   * removed by the function call.
    */
   iterator erase(iterator first, iterator last) {
     if (first == last)
@@ -446,32 +426,29 @@ public:
   }
 
   /**
-   * @brief Removes all elements from the vector (which are destroyed), leaving the container with a size of 0.
+   * @brief Removes all elements from the vector (which are destroyed), leaving
+   * the container with a size of 0.
    */
-  void clear() {
-    erase(begin(), end());
-  }
+  void clear() { erase(begin(), end()); }
 
-  //!@} Modifiers
+  //!@}
 
   //!@{ Allocator //////////////////////////////////////////////////////////////
 
   /**
    * @brief Get the allocator object
    */
-  allocator_type get_allocator() const {
-    return c;
-  }
+  allocator_type get_allocator() const { return c; }
 
-  //!@} Allocator
+  //!@}
 
 protected:
-
   /**
    * @brief Called by the 'constructor 3: range'
    */
   template <typename InputIterator>
-  void _initialize_dispatch(InputIterator first, InputIterator last, ft::__false_type) {
+  void _initialize_dispatch(InputIterator first, InputIterator last,
+                            ft::__false_type) {
     difference_type n = ft::distance(first, last);
 
     this->_start = c.allocate(n);
@@ -516,10 +493,11 @@ protected:
       return;
     }
 
-    // if the capacity is enough, but the size is not enough, then assign and construct
+    // if the capacity is enough, but the size is not enough, then assign and
+    // construct
     if (n > size()) {
       size_type tmp_n = n;
-      pointer i = this->_start;
+      pointer   i = this->_start;
 
       while (i != this->_finish) {
         *i++ = val;
@@ -532,7 +510,7 @@ protected:
 
     // if the capacity is enough, and the size is enough, then just assign
     size_type tmp_n = n;
-    pointer i = this->_start;
+    pointer   i = this->_start;
     while (tmp_n--)
       *i++ = val;
     while (i != this->_finish)
@@ -546,7 +524,8 @@ protected:
   }
 
   template <typename InputIterator>
-  void _assign_dispatch(InputIterator first, InputIterator last, ft::__false_type) {
+  void _assign_dispatch(InputIterator first, InputIterator last,
+                        ft::__false_type) {
     iterator it = begin();
     while (first != last && it != end())
       *it++ = *first++;
@@ -559,8 +538,9 @@ protected:
   /**
    * @brief Called by the 'insert' function
    */
-  template<typename InputIterator>
-  void _insert_dispatch(iterator position, InputIterator first, InputIterator last, __false_type) {
+  template <typename InputIterator>
+  void _insert_dispatch(iterator position, InputIterator first,
+                        InputIterator last, __false_type) {
     while (first != last) {
       position = insert(position, *first);
       ++position;
@@ -575,9 +555,11 @@ protected:
    * @param val value to be copied (or moved) to the inserted elements
    * @param is_integer check if it's an integer type
    */
-  template<typename Integer>
-  void _insert_dispatch(iterator position, Integer n, Integer val, __true_type) {
-    _fill_insert(position, static_cast<size_type>(n), static_cast<value_type>(val));
+  template <typename Integer>
+  void _insert_dispatch(iterator position, Integer n, Integer val,
+                        __true_type) {
+    _fill_insert(position, static_cast<size_type>(n),
+                 static_cast<value_type>(val));
   }
 
   /**
@@ -606,7 +588,7 @@ protected:
 
       // if position is not at the end of the vector
       size_type n_elems_after = end() - position;
-      pointer p_old = this->_finish - 1;
+      pointer   p_old = this->_finish - 1;
       this->_finish += n;
       pointer p = this->_finish - 1;
 
@@ -614,17 +596,16 @@ protected:
         c.construct(p--, *(p_old--));
       while (n--)
         c.construct(p--, v_copy);
-      return ;
+      return;
     }
 
     // if the capacity is not enough. Need to allocate new memory.
-    pointer old_start = this->_start;
+    pointer         old_start = this->_start;
     const size_type old_size = size();
-    size_type n_elems_before = position - begin();
-    size_type n_elems_after = end() - position;
+    size_type       n_elems_before = position - begin();
+    size_type       n_elems_after = end() - position;
 
     const size_type len = old_size + std::max(old_size, n);
-    // const size_type len = old_size + n;
     this->_start = c.allocate(len);
     this->_finish = this->_start;
     this->_end_of_storage = this->_start + len;
@@ -648,36 +629,43 @@ protected:
 
 }; // vector
 
-//! Non-member functions overloads
+//!@{ Non-member functions /////////////////////////////////////////////////////
 
 template <typename T, typename Alloc>
-inline bool operator==(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
+inline bool operator==(const vector<T, Alloc>& lhs,
+                       const vector<T, Alloc>& rhs) {
   return lhs.size() == rhs.size() &&
-    ft::equal(lhs.begin(), lhs.end(), rhs.begin());
+         ft::equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template <typename T, typename Alloc>
-inline bool operator!=(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
+inline bool operator!=(const vector<T, Alloc>& lhs,
+                       const vector<T, Alloc>& rhs) {
   return !(lhs == rhs);
 }
 
 template <typename T, typename Alloc>
-inline bool operator<(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
-  return ft::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+inline bool operator<(const vector<T, Alloc>& lhs,
+                      const vector<T, Alloc>& rhs) {
+  return ft::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(),
+                                     rhs.end());
 }
 
 template <typename T, typename Alloc>
-inline bool operator<=(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
+inline bool operator<=(const vector<T, Alloc>& lhs,
+                       const vector<T, Alloc>& rhs) {
   return !(rhs < lhs);
 }
 
 template <typename T, typename Alloc>
-inline bool operator>(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
+inline bool operator>(const vector<T, Alloc>& lhs,
+                      const vector<T, Alloc>& rhs) {
   return rhs < lhs;
 }
 
 template <typename T, typename Alloc>
-inline bool operator>=(const vector<T, Alloc>& lhs, const vector<T, Alloc>& rhs) {
+inline bool operator>=(const vector<T, Alloc>& lhs,
+                       const vector<T, Alloc>& rhs) {
   return !(lhs < rhs);
 }
 
@@ -686,7 +674,8 @@ inline void swap(vector<T, Alloc>& x, vector<T, Alloc>& y) {
   x.swap(y);
 }
 
-} /* namespace ft */
+//!@}
 
+} /* namespace ft */
 
 #endif /* __VECTOR_HPP__ */
