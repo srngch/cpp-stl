@@ -91,6 +91,9 @@ struct rb_tree_base_iterator {
 
 template <typename Val, typename Ref, typename Ptr>
 struct rb_tree_iterator : public rb_tree_base_iterator {
+
+
+// public:
   typedef Val                                           value_type;
   typedef Ref                                           reference;
   typedef Ptr                                           pointer;
@@ -108,12 +111,14 @@ struct rb_tree_iterator : public rb_tree_base_iterator {
   pointer operator->() const { return &(operator*()); }
 
   self& operator++() {
+    // increment
     m_increment();
     return *this;
   }
 
   self operator++(int) {
     self tmp = *this;
+    // increment
     m_increment();
     return tmp;
   }
@@ -377,43 +382,17 @@ rb_tree_rebalance_for_erase(rb_tree_node_base* z, rb_tree_node_base*& root,
 //!@}
 
 //!@{ Tree /////////////////////////////////////////////////////////////////////
-
-// Base class to encapsulate the differences between old SGI-style
-// allocators and standard-conforming allocators.  In order to avoid
-// having an empty base class, we arbitrarily move one of rb_tree's
-// data members into the base class.
-
-// Base for general standard-conforming allocators.
-template <typename Tp, typename Alloc>
-class rb_tree_base {
-public:
-  typedef typename Alloc::template rebind<Tp>::other allocator_type;
-
-  allocator_type get_allocator() const { return node_allocator; }
-
-  rb_tree_base(const allocator_type& a) : node_allocator(a) { }
-
-protected:
-  typename Alloc::template rebind<rb_tree_node<Tp> >::other node_allocator;
-
-  rb_tree_node_base m_header;
-
-  rb_tree_node<Tp>* m_get_node() { return node_allocator.allocate(1); }
-
-  void m_put_node(rb_tree_node<Tp>* p) { node_allocator.deallocate(p, 1); }
-
-  void m_destroynode(rb_tree_node<Tp>* p) { node_allocator.destroy(p); }
-};
-
 template <typename Key, typename Val, typename KeyOfValue,
           typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Val> >
-class rb_tree : protected rb_tree_base<Val, Alloc> {
-  typedef rb_tree_base<Val, Alloc> Base;
+class rb_tree {
+  typename Alloc::template rebind<rb_tree_node<Val> >::other node_allocator;
 
 protected:
   typedef rb_tree_node_base* base_ptr;
   typedef rb_tree_node<Val>  rb_tree_node;
+
+  rb_tree_node_base  m_header;
 
 public:
   typedef Key               keytype;
@@ -426,21 +405,16 @@ public:
   typedef size_t            size_type;
   typedef ptrdiff_t         difference_type;
 
-  typedef typename Base::allocator_type allocator_type;
-  allocator_type get_allocator() const { return Base::get_allocator(); }
+  typedef typename Alloc::template rebind<Val>::other allocator_type;
+  allocator_type get_allocator() const { return node_allocator; }
 
 protected:
-  using Base::m_destroynode;
-  using Base::m_get_node;
-  using Base::m_header;
-  using Base::m_put_node;
-
   link_type m_create_node(const value_type& x) {
-    link_type tmp = m_get_node();
+    link_type tmp = node_allocator.allocate(1);
     try {
       get_allocator().construct(&tmp->m_value_field, x);
-    } catch (...) {
-      m_put_node(tmp);
+    } catch(std::exception& e) {
+      node_allocator.deallocate(tmp, 1);
       throw;
     }
     return tmp;
@@ -455,8 +429,8 @@ protected:
   }
 
   void destroynode(link_type p) {
-    m_destroynode(p);
-    m_put_node(p);
+    node_allocator.destroy(p);
+    node_allocator.deallocate(p, 1);
   }
 
   size_type m_node_count; // keeps track of size of tree
@@ -511,17 +485,18 @@ public:
   typedef std::reverse_iterator<iterator>       reverse_iterator;
 
 private:
-  iterator m_insert(base_ptr base_ptr_x, base_ptr base_ptr_y, const value_type& v) {
+  iterator m_insert(base_ptr base_ptr_x, base_ptr base_ptr_y,
+                    const value_type& v) {
     link_type x = (link_type)base_ptr_x;
     link_type y = (link_type)base_ptr_y;
     link_type z;
 
-    if (y == &this->m_header || x != 0 ||
+    if (y == &m_header || x != 0 ||
         m_key_compare(KeyOfValue()(v), s_key(y))) {
       z = m_create_node(v);
       s_left(y) = z; // also makes m_leftmost() = z
       //    when y == &m_header
-      if (y == &this->m_header) {
+      if (y == &m_header) {
         m_root() = z;
         m_rightmost() = z;
       } else if (y == m_leftmost())
@@ -561,7 +536,7 @@ private:
         p = y;
         x = s_left(x);
       }
-    } catch (...) {
+    } catch(std::exception& e) {
       m_erase(top);
       throw;
     }
@@ -580,26 +555,28 @@ private:
 
 public:
   // allocation/deallocation
-  rb_tree() : Base(allocator_type()), m_node_count(0), m_key_compare() {
+  rb_tree()
+      : node_allocator(allocator_type()), m_node_count(0), m_key_compare() {
     m_emptyinitialize();
   }
 
   rb_tree(const Compare& comp)
-      : Base(allocator_type()), m_node_count(0), m_key_compare(comp) {
+      : node_allocator(allocator_type()), m_node_count(0), m_key_compare(comp) {
     m_emptyinitialize();
   }
 
   rb_tree(const Compare& comp, const allocator_type& a)
-      : Base(a), m_node_count(0), m_key_compare(comp) {
+      : node_allocator(a), m_node_count(0), m_key_compare(comp) {
     m_emptyinitialize();
   }
 
   rb_tree(const rb_tree<Key, Val, KeyOfValue, Compare, Alloc>& x)
-      : Base(x.get_allocator()), m_node_count(0), m_key_compare(x.m_key_compare) {
+      : node_allocator(x.get_allocator()), m_node_count(0),
+        m_key_compare(x.m_key_compare) {
     if (x.m_root() == 0)
       m_emptyinitialize();
     else {
-      s_color(&this->m_header) = red;
+      s_color(&m_header) = red;
       m_root() = m_copy(x.m_root(), m_end());
       m_leftmost() = s_minimum(m_root());
       m_rightmost() = s_maximum(m_root());
@@ -633,7 +610,7 @@ public:
 private:
   void m_emptyinitialize() {
     // Used to distinguish header from root, in iterator.operator++.
-    s_color(&this->m_header) = red;
+    s_color(&m_header) = red;
     m_root() = 0;
     m_leftmost() = m_end();
     m_rightmost() = m_end();
@@ -647,9 +624,9 @@ public:
 
   const_iterator begin() const { return m_leftmost(); }
 
-  iterator end() { return &this->m_header; }
+  iterator end() { return &m_header; }
 
-  const_iterator end() const { return const_cast<base_ptr>(&this->m_header); }
+  const_iterator end() const { return const_cast<base_ptr>(&m_header); }
 
   reverse_iterator rbegin() { return reverse_iterator(end()); }
 
@@ -746,7 +723,7 @@ public:
       // first argument just needs to be non-null
       else
         return insert_unique(v).first;
-    } else if (position.m_node == &this->m_header) {
+    } else if (position.m_node == &m_header) {
       // end()
       if (m_key_compare(s_key(m_rightmost()), KeyOfValue()(v)))
         return m_insert(0, m_rightmost(), v);
@@ -775,7 +752,7 @@ public:
       // first argument just needs to be non-null
       else
         return insert_equal(v);
-    } else if (position.m_node == &this->m_header) {
+    } else if (position.m_node == &m_header) {
       // end()
       if (!m_key_compare(KeyOfValue()(v), s_key(m_rightmost())))
         return m_insert(0, m_rightmost(), v);
@@ -947,8 +924,8 @@ public:
   bool _rb_verify() const {
     if (m_node_count == 0 || begin() == end())
       return m_node_count == 0 && begin() == end() &&
-             this->m_header.m_left == &this->m_header &&
-             this->m_header.m_right == &this->m_header;
+             this->m_header.m_left == &m_header &&
+             this->m_header.m_right == &m_header;
 
     int len = __black_count(m_leftmost(), m_root());
     for (const_iterator it = begin(); it != end(); ++it) {
