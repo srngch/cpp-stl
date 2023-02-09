@@ -3,6 +3,7 @@
 #include <stack>
 #include <map>
 #include <set>
+#include "vector.hpp"
 #include "stack.hpp"
 #include "map.hpp"
 #include "set.hpp"
@@ -10,6 +11,13 @@
 
 #include "pair.hpp"
 #include "function.hpp"
+
+void test_vector() {
+	// ft::vector<int> ft_first;
+	ft::vector<int> ft_second(4, 100);
+	// ft::vector<int> ft_third(ft_second.begin(), ft_second.end());
+	// ft::vector<int> ft_fourth(ft_third);
+}
 
 void test_stack() {
 	std::stack<int,std::vector<int> > org_stack;
@@ -69,9 +77,10 @@ void test_set() {
 
 int main ()
 {
+	test_vector();
 	// test_stack();
 	// test_rb_tree();
 	// test_map();
-	test_set();
+	// test_set();
 	return 0;
 }

@@ -3,20 +3,27 @@
 
 namespace ft {
 
-// type for true/false
+/**
+  @brief is_integral
+*/
 
-struct __true_type {};
-struct __false_type {};
+template <class T> struct is_integral            { static const bool value = false; };
+template <>        struct is_integral<bool>      { static const bool value = true; };
+template <>        struct is_integral<char>      { static const bool value = true; };
+template <>        struct is_integral<int>       { static const bool value = true; };
+template <>        struct is_integral<long>      { static const bool value = true; };
+template <>        struct is_integral<long long> { static const bool value = true; };
+template <>        struct is_integral<double>    { static const bool value = true; };
 
-// is_integral
+/**
+  @brief enable_if
+*/
 
-template <class T> struct is_integral            { typedef __false_type type; };
-template <>        struct is_integral<bool>      { typedef __true_type type; };
-template <>        struct is_integral<char>      { typedef __true_type type; };
-template <>        struct is_integral<int>       { typedef __true_type type; };
-template <>        struct is_integral<long>      { typedef __true_type type; };
-template <>        struct is_integral<long long> { typedef __true_type type; };
-template <>        struct is_integral<double>    { typedef __true_type type; };
+template<bool, typename T = void>
+struct enable_if { static const bool value = false; };
+
+template<typename T>
+struct enable_if<true, T> { typedef T type; static const bool value = true; };
 
 } /* namespace ft */
 

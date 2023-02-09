@@ -80,6 +80,10 @@ public:
   explicit vector(size_type n, const value_type& v = value_type(),
                   const allocator_type& a = allocator_type())
   : base(n, a) {
+    this->_start = c.allocate(n);
+    this->_finish = this->_start;
+    this->_end_of_storage = this->_finish + n;
+
     while (n--)
       c.construct(this->_finish++, v);
   }
@@ -89,13 +93,23 @@ public:
    * @example iterating through second
    *     ft::vector<int> third(second.begin(), second.end());
    */
+  
   template <class InputIterator>
-  vector(InputIterator first, InputIterator last,
-         const allocator_type& a = allocator_type())
+  vector(InputIterator first,
+         InputIterator last,
+         const allocator_type& a = allocator_type(),
+         typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = 0
+         )
   : base(a) {
-    // check if it's an integer type
-    typedef typename ft::is_integral<InputIterator>::type is_integer;
-    _initialize_dispatch(first, last, is_integer());
+    difference_type n = ft::distance(first, last);
+
+    this->_start = c.allocate(n);
+    this->_finish = this->_start;
+
+    while (n--)
+      c.construct(this->_finish++, *first++);
+
+    this->_end_of_storage = this->_finish;
   }
 
   /**
@@ -310,9 +324,17 @@ public:
    * @param last: InputIterator to the final position in a sequence
    */
   template <typename InputIterator>
-  void assign(InputIterator first, InputIterator last) {
-    typedef typename ft::is_integral<InputIterator>::type is_integer;
-    _assign_dispatch(first, last, is_integer());
+  void assign(InputIterator first, InputIterator last,
+              typename ft::enable_if<!ft::is_integral<InputIterator>::value,
+                                     InputIterator>::type* = 0) {
+    iterator it = begin();
+
+    while (first != last && it != end())
+      *it++ = *first++;
+    if (first == last)
+      erase(it, end());
+    else
+      insert(end(), first, last);
   }
 
   /**
@@ -368,10 +390,14 @@ public:
    * @param last end of the range(excluding the element pointed by last)
    */
   template <typename InputIterator>
-  void insert(iterator position, InputIterator first, InputIterator last) {
-    // check if it's an integer type
-    typedef typename ft::is_integral<InputIterator>::type is_integer;
-    _insert_dispatch(position, first, last, is_integer());
+  void insert(iterator position, InputIterator first, InputIterator last,
+              typename ft::enable_if<!ft::is_integral<InputIterator>::value,
+                                     InputIterator>::type* = 0) {
+    while (first != last) {
+      position = insert(position, *first);
+      ++position;
+      ++first;
+    }
   }
 
   /**
@@ -443,36 +469,6 @@ public:
   //!@}
 
 protected:
-  /**
-   * @brief Called by the 'constructor 3: range'
-   */
-  template <typename InputIterator>
-  void _initialize_dispatch(InputIterator first, InputIterator last,
-                            ft::__false_type) {
-    difference_type n = ft::distance(first, last);
-
-    this->_start = c.allocate(n);
-    this->_finish = this->_start;
-
-    while (n--)
-      c.construct(this->_finish++, *first++);
-
-    this->_end_of_storage = this->_finish;
-  }
-
-  /**
-   * @brief if the iterator is an integer type, then it is assumed to be a size.
-   * Called by the 'constructor 3: range'
-   */
-  template <typename Integer>
-  void _initialize_dispatch(Integer n, Integer val, ft::__true_type) {
-    this->_start = c.allocate(n);
-    this->_finish = this->_start;
-    this->_end_of_storage = this->_finish + n;
-
-    while (n--)
-      c.construct(this->_finish++, val);
-  }
 
   void _fill_assign(size_type n, const value_type& val) {
     // if the capacity is not enough, then reallocate
@@ -518,52 +514,8 @@ protected:
     this->_finish = this->_start + n;
   }
 
-  template <typename Integer>
-  void _assign_dispatch(Integer n, Integer val, ft::__true_type) {
-    _fill_assign(static_cast<size_type>(n), static_cast<value_type>(val));
-  }
-
-  template <typename InputIterator>
-  void _assign_dispatch(InputIterator first, InputIterator last,
-                        ft::__false_type) {
-    iterator it = begin();
-    while (first != last && it != end())
-      *it++ = *first++;
-    if (first == last)
-      erase(it, end());
-    else
-      insert(end(), first, last);
-  }
-
   /**
    * @brief Called by the 'insert' function
-   */
-  template <typename InputIterator>
-  void _insert_dispatch(iterator position, InputIterator first,
-                        InputIterator last, __false_type) {
-    while (first != last) {
-      position = insert(position, *first);
-      ++position;
-      ++first;
-    }
-  }
-
-  /**
-   * @brief Called by the 'insert' function
-   * @param position iterator before which the content will be inserted
-   * @param n number of elements to insert
-   * @param val value to be copied (or moved) to the inserted elements
-   * @param is_integer check if it's an integer type
-   */
-  template <typename Integer>
-  void _insert_dispatch(iterator position, Integer n, Integer val,
-                        __true_type) {
-    _fill_insert(position, static_cast<size_type>(n),
-                 static_cast<value_type>(val));
-  }
-
-  /**
-   * @brief Called by the '_insert_dispatch' function above
    * @param position iterator before which the content will be inserted
    * @param n number of elements to insert
    * @param val value to be copied (or moved) to the inserted elements
