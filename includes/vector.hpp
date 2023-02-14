@@ -9,37 +9,7 @@
 namespace ft {
 
 template <typename T, typename Alloc = std::allocator<T> >
-class vector_base {
-protected:
-  typedef Alloc                           allocator_type;
-  typedef typename Alloc::pointer         pointer;
-  typedef typename Alloc::const_pointer   const_pointer;
-  typedef typename Alloc::reference       reference;
-  typedef typename Alloc::const_reference const_reference;
-
-  allocator_type                          alloc;
-  pointer                                 _start;
-  pointer                                 _finish;
-  pointer                                 _end_of_storage;
-
-public:
-  vector_base(const allocator_type& a)
-  : alloc(a), _start(NULL), _finish(NULL), _end_of_storage(NULL) { }
-
-  vector_base(size_t n, const allocator_type& a)
-  : alloc(a), _start(alloc.allocate(n)), _finish(_start),
-    _end_of_storage(_start + n) { }
-
-  ~vector_base() {
-    if (_start)
-      alloc.deallocate(_start, _end_of_storage - _start);
-  }
-};
-
-template <typename T, typename Alloc = std::allocator<T> >
-class vector : protected vector_base<T, Alloc> {
-  typedef vector_base<T, Alloc> base;
-  typedef vector<T, Alloc>      vector_type;
+class vector {
 
 public:
   typedef T                                        value_type;
@@ -57,8 +27,11 @@ public:
   typedef ft::reverse_iterator<iterator>           reverse_iterator;
   typedef ft::reverse_iterator<const_iterator>     const_reverse_iterator;
 
-protected:
-  allocator_type c;
+private:
+  allocator_type                                   _alloc;
+  pointer                                          _start;
+  pointer                                          _finish;
+  pointer                                          _end_of_storage;
 
 public:
   //!@{ construct/copy/destroy /////////////////////////////////////////////////
@@ -69,7 +42,8 @@ public:
    * @example empty vector of ints
    *     ft::vector<int> first;
    */
-  explicit vector(const allocator_type& a = allocator_type()) : base(a) { }
+  explicit vector(const allocator_type& a = allocator_type()) 
+  : _alloc(a), _start(NULL), _finish(NULL), _end_of_storage(NULL) { }
 
   /**
    * @brief constructor(fill)
@@ -79,13 +53,13 @@ public:
    */
   explicit vector(size_type n, const value_type& v = value_type(),
                   const allocator_type& a = allocator_type())
-  : base(n, a) {
-    this->_start = c.allocate(n);
-    this->_finish = this->_start;
-    this->_end_of_storage = this->_finish + n;
+  : _alloc(a), _start(NULL), _finish(NULL), _end_of_storage(NULL) {
+    _start = _alloc.allocate(n);
+    _finish = _start;
+    _end_of_storage = _finish + n;
 
     while (n--)
-      c.construct(this->_finish++, v);
+      _alloc.construct(_finish++, v);
   }
 
   /**
@@ -100,16 +74,16 @@ public:
          const allocator_type& a = allocator_type(),
          typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = 0
          )
-  : base(a) {
+  : _alloc(a), _start(NULL), _finish(NULL), _end_of_storage(NULL) {
     difference_type n = ft::distance(first, last);
 
-    this->_start = c.allocate(n);
-    this->_finish = this->_start;
+    _start = _alloc.allocate(n);
+    _finish = _start;
 
     while (n--)
-      c.construct(this->_finish++, *first++);
+      _alloc.construct(_finish++, *first++);
 
-    this->_end_of_storage = this->_finish;
+    _end_of_storage = _finish;
   }
 
   /**
@@ -117,15 +91,25 @@ public:
    * @example a copy of second
    *     ft::vector<int> fourth(second);
    */
-  vector(const vector& other) : base(other.size(), other.c) {
-    this->insert(this->begin(), other.begin(), other.end());
+  vector(const vector& other)
+   : _alloc(other._alloc), _start(NULL), _finish(NULL), _end_of_storage(NULL)
+  {
+    _start = _alloc.allocate(other.size());
+    _finish = _start;
+    _end_of_storage = _start + other.size();
+    insert(begin(), other.begin(), other.end());
   }
 
   /**
    * @brief destructor
    * Destroy the vector object
    */
-  ~vector() { this->clear(); }
+  ~vector() { 
+    clear();
+    for (pointer p = _start; p != _finish; p++)
+      _alloc.destroy(p);
+    _alloc.deallocate(_start, _finish - _start);
+   }
 
   /**
    * @brief assignment operator
@@ -137,9 +121,8 @@ public:
    */
   vector& operator=(const vector& x) {
     if (this != &x) {
-      this->clear();
-      // TODO: assign으로 변경 고려하기
-      this->insert(this->begin(), x.begin(), x.end());
+      clear();
+      insert(begin(), x.begin(), x.end());
     }
     return *this;
   }
@@ -152,25 +135,25 @@ public:
    * @brief Returns a read/write iterator pointing to the first element in the
    * vector.
    */
-  iterator begin() { return iterator(this->_start); }
+  iterator begin() { return iterator(_start); }
 
   /**
    * @brief Returns a read-only iterator pointing to the first element in the
    * vector.
    */
-  const_iterator begin() const { return const_iterator(this->_start); }
+  const_iterator begin() const { return const_iterator(_start); }
 
   /**
    * @brief Returns a read/write iterator pointing to one past the last element
    * in the vector.
    */
-  iterator end() { return iterator(this->_finish); }
+  iterator end() { return iterator(_finish); }
 
   /**
    * @brief Returns a read-only iterator pointing to one past the last element
    * in the vector.
    */
-  const_iterator end() const { return const_iterator(this->_finish); }
+  const_iterator end() const { return const_iterator(_finish); }
 
   //!@}
 
@@ -227,7 +210,6 @@ public:
    * @param v value to initialize the new elements with
    */
   void resize(size_type n, value_type v = value_type()) {
-    // TODO: insert 구현 후 다시 체크
     if (n < size()) {
       erase(begin() + n, end());
     } else {
@@ -240,7 +222,7 @@ public:
    * vector, expressed in terms of elements.
    */
   size_type capacity() const {
-    return size_type(const_iterator(this->_end_of_storage) - begin());
+    return size_type(const_iterator(_end_of_storage) - begin());
   }
 
   /**
@@ -302,8 +284,8 @@ public:
    * @brief Returns a direct pointer to the memory array used internally by the
    * vector to store its owned elements.
    */
-  pointer       data() { return this->_start; }
-  const_pointer data() const { return this->_start; }
+  pointer       data() { return _start; }
+  const_pointer data() const { return _start; }
 
   //!@}
 
@@ -315,7 +297,27 @@ public:
    * @param n: new size of the container
    * @param val: value to initialize the new elements with
    */
-  void assign(size_type n, const value_type& val) { _fill_assign(n, val); }
+  void assign(size_type n, const value_type& val) { 
+    clear();
+    if (capacity() < n) {
+      pointer old_start = _start;
+      pointer old_end = _end_of_storage;
+
+      _start = _alloc.allocate(n);
+      _finish = _start;
+      _end_of_storage = _start + n;
+
+      while (old_end != old_start)
+        _alloc.destroy(old_end--);
+
+      while (n--)
+        _alloc.construct(_finish++, val);
+      _alloc.deallocate(old_start, old_end - old_start);
+      return;
+    }
+    while (n--)
+      _alloc.construct(_finish++, val);
+  }
 
   /**
    * @brief Assigns new contents to the vector, replacing its current contents,
@@ -325,16 +327,30 @@ public:
    */
   template <typename InputIterator>
   void assign(InputIterator first, InputIterator last,
-              typename ft::enable_if<!ft::is_integral<InputIterator>::value,
-                                     InputIterator>::type* = 0) {
-    iterator it = begin();
+              typename ft::enable_if<!ft::is_integral<InputIterator>::value>::type* = 0) {
+    
+    clear();
+    size_type n = ft::distance(first, last);
 
-    while (first != last && it != end())
-      *it++ = *first++;
-    if (first == last)
-      erase(it, end());
-    else
-      insert(end(), first, last);
+    if (capacity() < n) {
+      pointer old_start = _start;
+      pointer old_end = _end_of_storage;
+
+      _start = _alloc.allocate(n);
+      _finish = _start;
+      _end_of_storage = _start + n;
+      pointer tmp = &(*first);
+
+      while (old_end != old_start)
+        _alloc.destroy(old_end--);
+
+      while (n--)
+        _alloc.construct(_finish++, *tmp++);
+      _alloc.deallocate(old_start, old_end - old_start);
+      return;
+    }
+    while (n--)
+      _alloc.construct(_finish++, *first++);
   }
 
   /**
@@ -342,9 +358,9 @@ public:
    * element.
    */
   void push_back(const value_type& val) {
-    if (this->_finish != this->_end_of_storage) {
-      c.construct(this->_finish, val);
-      ++this->_finish;
+    if (_finish != _end_of_storage) {
+      _alloc.construct(_finish, val);
+      ++_finish;
     } else {
       insert(end(), val);
     }
@@ -355,8 +371,8 @@ public:
    * container size by one.
    */
   void pop_back() {
-    --this->_finish;
-    c.destroy(this->_finish);
+    --_finish;
+    _alloc.destroy(_finish);
   }
 
   /**
@@ -410,9 +426,9 @@ public:
   iterator erase(iterator position) {
     if (position != end() - 1)
       std::copy(position + 1, end(), position);
-    pointer old_finish = this->_finish;
-    --this->_finish;
-    c.destroy(old_finish);
+    pointer old_finish = _finish;
+    --_finish;
+    _alloc.destroy(old_finish);
     return position;
   }
 
@@ -431,10 +447,10 @@ public:
     if (last != end())
       std::copy(last, end(), first);
 
-    pointer old_finish = this->_finish;
-    this->_finish = this->_finish - (last - first);
-    while (old_finish != this->_finish) {
-      c.destroy(old_finish--);
+    pointer old_finish = _finish;
+    _finish = _finish - (last - first);
+    while (old_finish != _finish) {
+      _alloc.destroy(old_finish--);
     }
     return first;
   }
@@ -446,9 +462,9 @@ public:
    * @param x
    */
   void swap(vector& x) {
-    ft::swap(this->_start, x._start);
-    ft::swap(this->_finish, x._finish);
-    ft::swap(this->_end_of_storage, x._end_of_storage);
+    ft::swap(_start, x._start);
+    ft::swap(_finish, x._finish);
+    ft::swap(_end_of_storage, x._end_of_storage);
   }
 
   /**
@@ -464,55 +480,11 @@ public:
   /**
    * @brief Get the allocator object
    */
-  allocator_type get_allocator() const { return c; }
+  allocator_type get_allocator() const { return _alloc; }
 
   //!@}
 
 protected:
-
-  void _fill_assign(size_type n, const value_type& val) {
-    // if the capacity is not enough, then reallocate
-    if (n > capacity()) {
-      pointer old_start = this->_start;
-      pointer old_finish = this->_finish;
-
-      this->_start = c.allocate(n);
-      this->_finish = this->_start;
-      this->_end_of_storage = this->_start + n;
-
-      while (old_finish != old_start)
-        c.destroy(old_finish--);
-      c.deallocate(old_start, old_finish - old_start);
-
-      while (n--)
-        c.construct(this->_finish++, val);
-      return;
-    }
-
-    // if the capacity is enough, but the size is not enough, then assign and
-    // construct
-    if (n > size()) {
-      size_type tmp_n = n;
-      pointer   i = this->_start;
-
-      while (i != this->_finish) {
-        *i++ = val;
-      }
-      while (tmp_n--)
-        c.construct(this->_finish++, val);
-      this->_finish = this->_start + n;
-      return;
-    }
-
-    // if the capacity is enough, and the size is enough, then just assign
-    size_type tmp_n = n;
-    pointer   i = this->_start;
-    while (tmp_n--)
-      *i++ = val;
-    while (i != this->_finish)
-      c.destroy(i++);
-    this->_finish = this->_start + n;
-  }
 
   /**
    * @brief Called by the 'insert' function
@@ -523,62 +495,48 @@ protected:
   void _fill_insert(iterator position, size_type n, const value_type& v) {
     if (n == 0)
       return;
+    if (max_size() < n)
+      throw (std::length_error("vector::insert (fill)"));
 
-    // if the capacity is enough. Do not need to allocate new memory.
-    if (static_cast<size_type>(this->_end_of_storage - this->_finish) >= n) {
-      value_type v_copy = v;
+    if (n <= size_type(_end_of_storage - _finish)) {
+      // if there is enough space at the end of the vector
+      size_type n_after = end() - position;
+      pointer old_finish = _finish - 1;
+      _finish += n;
+      pointer p = _finish - 1;
 
-      // if position is at the end of the vector
-      if (position == end()) {
-        this->_finish += n;
-        pointer p = this->_finish - 1;
-
-        while (n--)
-          c.construct(p--, v_copy);
-        return;
-      }
-
-      // if position is not at the end of the vector
-      size_type n_elems_after = end() - position;
-      pointer   p_old = this->_finish - 1;
-      this->_finish += n;
-      pointer p = this->_finish - 1;
-
-      while (n_elems_after--)
-        c.construct(p--, *(p_old--));
+      while (n_after--)
+        _alloc.construct(p--, *(old_finish--));
       while (n--)
-        c.construct(p--, v_copy);
+        _alloc.construct(p--, v);
       return;
     }
+  
+    // if there is not enough space at the end of the vector
+    size_type n_before = position - begin();
+    size_type n_after = end() - position;
 
-    // if the capacity is not enough. Need to allocate new memory.
-    pointer         old_start = this->_start;
-    const size_type old_size = size();
-    size_type       n_elems_before = position - begin();
-    size_type       n_elems_after = end() - position;
+    size_type new_size = size() + std::max(size(), n);
+    pointer s = _start;
+    pointer old_start = _start;
 
-    const size_type len = old_size + std::max(old_size, n);
-    this->_start = c.allocate(len);
-    this->_finish = this->_start;
-    this->_end_of_storage = this->_start + len;
+    _start = _alloc.allocate(new_size);
+    _finish = _start;
+    _end_of_storage = _start + new_size;
 
-    // copy the elements before position
-    while (n_elems_before--) {
-      c.construct(this->_finish++, *old_start);
-      c.destroy(old_start);
-      ++old_start;
+    while (n_before--) {
+      _alloc.construct(_finish++, *s);
+      _alloc.destroy(s++);
     }
-    // insert n elements with value v
     while (n--)
-      c.construct(this->_finish++, v);
-    // copy the elements after position
-    while (n_elems_after--) {
-      c.construct(this->_finish++, *old_start);
-      c.destroy(old_start);
-      ++old_start;
+      _alloc.construct(_finish++, v);
+    while (n_after--) {
+      _alloc.construct(_finish++, *s);
+      _alloc.destroy(s++);
     }
-  }
 
+    _alloc.deallocate(old_start, capacity());
+  }
 }; // vector
 
 //!@{ Non-member functions /////////////////////////////////////////////////////
