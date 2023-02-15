@@ -1,18 +1,9 @@
 #include <iostream>
-#include <vector>
-#include <stack>
-#include <map>
-#include <set>
-#include "vector.hpp"
-#include "stack.hpp"
-#include "map.hpp"
-#include "set.hpp"
-#include "rb_tree.hpp"
+#include <string>
+#include <deque>
+#include <stdlib.h>
 
-#include "pair.hpp"
-#include "function.hpp"
-
-// #define FT_STL
+#define FT_STL
 
 #ifdef FT_STL //CREATE A REAL STL EXAMPLE
   #include <vector>
