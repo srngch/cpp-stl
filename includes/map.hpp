@@ -23,7 +23,7 @@ private:
   typedef rb_tree<key_type, value_type, _Select1st<value_type>,
                    key_compare, Alloc>              rep_type;
 
-  rep_type _tree;
+  rep_type                                          _tree;
 
 public:
   typedef typename rep_type::allocator_type         allocator_type;
