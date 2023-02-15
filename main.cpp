@@ -3,7 +3,7 @@
 #include <deque>
 #include <stdlib.h>
 
-#define FT_STL
+// #define FT_STL
 
 #ifdef FT_STL //CREATE A REAL STL EXAMPLE
   #include <vector>
